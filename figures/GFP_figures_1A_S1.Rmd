@@ -1,0 +1,393 @@
+---
+title: "GFP analysis"
+output: html_document
+---
+
+Load packages
+```{r}
+require(ggplot2)
+require(reshape2)
+require(RColorBrewer)
+require(mgcv)
+
+theme_dbc <- theme_set(theme_gray())
+theme_dbc <- theme_update(
+  panel.background = element_rect(fill = "white"),
+  panel.border = element_rect( colour = "black",fill=NA,size=2),
+  panel.grid.major = element_line(colour = "gray93",size=1),
+  panel.grid.minor = element_line(colour = "gray98",size=1),
+  strip.text.x = element_text(size=12,face='bold'),
+  axis.title = element_text(size=16),
+  strip.background = element_rect(colour="black", fill="white",size = 1),
+  axis.text = element_text(colour = "black",face="bold",size=16),
+  axis.ticks=element_line(color="black",size=2))
+
+```
+
+Load and format in FACs data from 5 days of experiments
+```{r}
+#Function to read in data
+load_data = function(path_name,samples,dat_names){
+  no_samples = dim(samples)[1]
+  fsc_dat = data.frame(matrix(nrow=10000,ncol=no_samples))
+  names(fsc_dat)=samples[,2]
+  blu1_dat = data.frame(matrix(nrow=10000,ncol=no_samples))
+  names(blu1_dat)=samples[,2]
+  
+  for(i in 1:dim(samples)[1]){
+    file_name = paste(path_name,samples[i,1],sep="")
+    sample_name = samples[[i,2]]
+    print(sample_name)
+    temp = read.table(file_name,sep=",",header=FALSE)
+    names(temp)=dat_names[,2]
+    
+    #remove sample with max FSC value
+    rem = unique(c(which(temp[,2]==261621),which(temp[,2]<2000),which(temp[,3]<1000)))
+    print(length(rem))
+    if(length(rem>=1)){temp = temp[-rem,]}
+    
+    #add data to matrix
+    size = dim(temp)[1]
+    fsc_dat[1:size,i]=temp[,2]
+    blu1_dat[1:size,i]=temp[,4]
+    
+    }
+  return(cbind(fsc_dat,blu1_dat))
+}
+
+all_fsc = data.frame(matrix(nrow = 11500,ncol=61))
+all_blu1 = data.frame(matrix(nrow = 11500,ncol=61))
+
+#load data from 12/7/17
+samples_exp12_7 = read.table("~/Desktop/SherlockLab2/gfp/Data-12-7-16/name_key.txt",sep="\t",header=FALSE,stringsAsFactors = FALSE)
+dat_names_exp12_7 = read.table("~/Desktop/SherlockLab2/gfp/Data-12-7-16/files/file=1-2003.info",sep="\t",header=FALSE)
+path_name_exp12_7 = "~/Desktop/SherlockLab2/gfp/Data-12-7-16/files/file="
+temp = load_data(path_name_exp12_7,samples_exp12_7,dat_names_exp12_7)
+names(temp)[c(3,10:18,38)]
+names(temp)[c(42,49:57,77)]
+names(temp)[c(3,10:18,38)]==names(temp)[c(42,49:57,77)]
+fsc_temp = temp[,c(3,10:18,38)]
+blu1_temp = temp[,c(42,49:57,77)]
+no_samples = dim(fsc_temp)[2]
+
+all_fsc[1:dim(fsc_temp)[1],1:no_samples]=fsc_temp
+names(all_fsc)[1:no_samples]=names(fsc_temp)
+
+all_blu1[1:dim(blu1_temp)[1],1:no_samples]=blu1_temp
+names(all_blu1)[1:no_samples]=names(blu1_temp)
+
+col_count = 1 + no_samples
+
+#load data from 1/11/17
+samples_exp1_11 = read.table("~/Desktop/SherlockLab2/gfp/Data-1-11-17/name_key.txt",sep="\t",header=FALSE,stringsAsFactors = FALSE)
+dat_names_exp1_11 = read.table("~/Desktop/SherlockLab2/gfp/Data-1-11-17/files/file=2-2004.info",sep="\t",header=FALSE)
+path_name_exp1_11 = "~/Desktop/SherlockLab2/gfp/Data-1-11-17/files/file="
+temp = load_data(path_name_exp1_11,samples_exp1_11,dat_names_exp1_11)
+names(temp)[c(5,8,11,15,16,25,38,39,42:45)]
+names(temp)[c(50,53,56,60,61,70,83,84,87:90)]
+names(temp)[c(5,8,11,15,16,25,38,39,42:45)]==names(temp)[c(50,53,56,60,61,70,83,84,87:90)]
+fsc_temp = temp[,c(5,8,11,15,16,25,38,39,42:45)]
+blu1_temp = temp[,c(50,53,56,60,61,70,83,84,87:90)]
+no_samples = dim(fsc_temp)[2]
+col_range = col_count:(col_count-1+no_samples)
+
+all_fsc[1:dim(fsc_temp)[1],col_range]=fsc_temp
+names(all_fsc)[col_range]=names(fsc_temp)
+
+all_blu1[1:dim(blu1_temp)[1],col_range]=blu1_temp
+names(all_blu1)[col_range]=names(blu1_temp)
+col_count = col_count + no_samples
+
+
+
+#load data from 1/25/17
+samples_exp1_25 = read.table("~/Desktop/SherlockLab2/gfp/Data-1-25-17/name_key.txt",sep="\t",header=FALSE,stringsAsFactors = FALSE)
+dat_names_exp1_25 = read.table("~/Desktop/SherlockLab2/gfp/Data-1-25-17/files/file=1-2003.info",sep="\t",header=FALSE)
+path_name_exp1_25 = "~/Desktop/SherlockLab2/gfp/Data-1-25-17/files/file="
+temp = load_data(path_name_exp1_25,samples_exp1_25,dat_names_exp1_25)
+names(temp)[c(5:7,9:14,21:32)]
+names(temp)[c(37:39,41:46,53:64)]
+names(temp)[c(5:7,9:14,21:32)]==names(temp)[c(37:39,41:46,53:64)]
+fsc_temp = temp[,c(5:7,9:14,21:32)]
+blu1_temp = temp[,c(37:39,41:46,53:64)]
+
+no_samples = dim(fsc_temp)[2]
+col_range = col_count:(col_count-1+no_samples)
+
+all_fsc[1:dim(fsc_temp)[1],col_range]=fsc_temp
+names(all_fsc)[col_range]=names(fsc_temp)
+
+all_blu1[1:dim(blu1_temp)[1],col_range]=blu1_temp
+names(all_blu1)[col_range]=names(blu1_temp)
+col_count = col_count + no_samples
+
+#load data from 2/2/17
+samples_exp2_2 = read.table("~/Desktop/SherlockLab2/gfp/Data-2-2-17/name_key.txt",sep="\t",header=FALSE,stringsAsFactors = FALSE)
+dat_names_exp2_2 = read.table("~/Desktop/SherlockLab2/gfp/Data-2-2-17/files/file=1-2003.info",sep="\t",header=FALSE)
+path_name_exp2_2="~/Desktop/SherlockLab2/gfp/Data-2-2-17/files/file="
+temp = load_data(path_name_exp2_2,samples_exp2_2,dat_names_exp2_2)
+names(temp)[c(5,8,10:11,18:19,26:29)]
+names(temp)[c(34,37,39:40,47:48,55:58)]
+names(temp)[c(5,8,10:11,18:19,26:29)]==names(temp)[c(34,37,39:40,47:48,55:58)]
+fsc_temp = temp[,c(5,8,10:11,18:19,26:29)]
+blu1_temp = temp[,c(34,37,39:40,47:48,55:58)]
+
+no_samples = dim(fsc_temp)[2]
+col_range = col_count:(col_count-1+no_samples)
+
+all_fsc[1:dim(fsc_temp)[1],col_range]=fsc_temp
+names(all_fsc)[col_range]=names(fsc_temp)
+
+all_blu1[1:dim(blu1_temp)[1],col_range]=blu1_temp
+names(all_blu1)[col_range]=names(blu1_temp)
+col_count = col_count + no_samples
+
+#load data from 2/14/17
+samples_exp2_14 = read.table("~/Desktop/SherlockLab2/gfp/Data-2-14-17/name_key.txt",sep="\t",header=FALSE,stringsAsFactors = FALSE)
+dat_names_exp2_14 = read.table("~/Desktop/SherlockLab2/gfp/Data-2-14-17/files/file=1-2004.info",sep="\t",header=FALSE)
+path_name_exp2_14 = "~/Desktop/SherlockLab2/gfp/Data-2-14-17/files/file="
+temp = load_data(path_name_exp2_14,samples_exp2_14,dat_names_exp2_14)
+names(temp)[c(8,17:22)]
+names(temp)[c(46,55:60)]
+names(temp)[c(8,17:22)]==names(temp)[c(46,55:60)]
+fsc_temp = temp[,c(8,17:22)]
+blu1_temp = temp[,c(46,55:60)]
+
+no_samples = dim(fsc_temp)[2]
+col_range = col_count:(col_count-1+no_samples)
+
+all_fsc[1:dim(fsc_temp)[1],col_range]=fsc_temp
+names(all_fsc)[col_range]=names(fsc_temp)
+
+all_blu1[1:dim(blu1_temp)[1],col_range]=blu1_temp
+names(all_blu1)[col_range]=names(blu1_temp)
+col_count = col_count + no_samples
+
+```
+
+Figure S1A and 1A
+Make scatter plots to compare 50/50 mix to treated and untreated
+```{r fig.width=10,fig.height=10}
+#One example for RPN5 (Have 4 replicates)
+names(all_blu1)[14] #MIA187 strain is the GFP RPN5 strain carrying the control guide
+names(all_blu1)[21:22]
+names(all_fsc)[14]
+names(all_fsc)[21:22]
+
+ggplot()+geom_point(aes(y=all_blu1[,14],x=all_fsc[,14]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,22],x=all_fsc[,22]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,21],x=all_fsc[,21]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("RPN5g1")
+
+ggplot()+geom_point(aes(y=all_blu1[,14],x=all_fsc[,14]),alpha=0.6)+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("RPN5g1")
+
+#One example for GET2g2 (have 3 total)
+names(all_blu1)[c(11,5,2)] 
+names(all_fsc)[c(11,5,2)] 
+ggplot()+geom_point(aes(y=all_blu1[,11],x=all_fsc[,11]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,5],x=all_fsc[,5]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,2],x=all_fsc[,2]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("GET2g2")
+
+ggplot()+geom_point(aes(y=all_blu1[,11],x=all_fsc[,11]),alpha=0.6)+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("GET2g2")
+
+#One example for COG8g2 (have 4 total)
+names(all_blu1)[c(12,16,15)] #MIA165 is COG8 gfp strain with non targeting control guide
+names(all_fsc)[c(12,16,15)] 
+ggplot()+geom_point(aes(y=all_blu1[,12],x=all_fsc[,12]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,16],x=all_fsc[,16]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,15],x=all_fsc[,15]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("COG8g2")
+
+ggplot()+geom_point(aes(y=all_blu1[,12],x=all_fsc[,12]),alpha=0.6)+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("COG8g2")
+
+#One example for SAP30g7 (have 4 total)
+names(all_blu1)[c(13,19,18)] #MIA183 is SAP30 gfp strain with non targeting control guide
+names(all_fsc)[c(13,19,18)] 
+ggplot()+geom_point(aes(y=all_blu1[,13],x=all_fsc[,13]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,19],x=all_fsc[,19]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,18],x=all_fsc[,18]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("SAP30g7")
+
+ggplot()+geom_point(aes(y=all_blu1[,13],x=all_fsc[,13]),alpha=0.6)+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("SAP30g7")
+
+#One example for YCR016W (have 1 total)
+names(all_blu1)[c(46,52,51)] 
+names(all_fsc)[c(46,52,51)] 
+ggplot()+geom_point(aes(y=all_blu1[,46],x=all_fsc[,46]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,52],x=all_fsc[,52]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,51],x=all_fsc[,51]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("YCR016Wg4")
+
+ggplot()+geom_point(aes(y=all_blu1[,46],x=all_fsc[,46]),alpha=0.6)+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("YCR016Wg4")
+
+#one example for YLR050C (have 1 total)
+names(all_blu1)[c(45,48,47)] 
+names(all_fsc)[c(45,48,47)] 
+ggplot()+geom_point(aes(y=all_blu1[,45],x=all_fsc[,45]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,48],x=all_fsc[,48]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,47],x=all_fsc[,47]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("YLR050Cg1")
+
+ggplot()+geom_point(aes(y=all_blu1[,45],x=all_fsc[,45]),alpha=0.6)+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("YLR050Cg1")
+
+#One example for PRE4g3 (have 1 total)
+names(all_blu1)[c(55,57,56)]
+names(all_fsc)[c(55,57,56)] 
+ggplot()+geom_point(aes(y=all_blu1[,55],x=all_fsc[,55]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,57],x=all_fsc[,57]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,56],x=all_fsc[,56]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("PRE4g3")
+
+ggplot()+geom_point(aes(y=all_blu1[,55],x=all_fsc[,55]),alpha=0.6)+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("PRE4g3")
+
+#For PRE4 also show non-targeting plus and minus atc
+names(all_blu1)[c(55,61,60)]
+names(all_fsc)[c(55,61,60)] 
+ggplot()+geom_point(aes(y=all_blu1[,55],x=all_fsc[,55]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,61],x=all_fsc[,61]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,60],x=all_fsc[,60]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("PRE4 non-targeting")
+
+#One example for PRE4g9 (have 1 total)
+names(all_blu1)[c(55,59,58)]
+names(all_fsc)[c(55,59,58)] 
+ggplot()+geom_point(aes(y=all_blu1[,55],x=all_fsc[,55]),alpha=0.6)+
+  geom_point(aes(y=all_blu1[,59],x=all_fsc[,59]),alpha=0.2,color="turquoise")+
+  geom_point(aes(y=all_blu1[,58],x=all_fsc[,58]),alpha=0.2,color="indianred2")+
+  scale_x_log10(limits=c(30000,3e5))+scale_y_log10(limits=c(20,10000))+
+  xlab("FSC")+ylab("BluFL1")+annotation_logticks(size=2)+ggtitle("PRE4g9")
+
+```
+
+Figure S1B
+Generate violin plots of residuals
+```{r fig.width=14,fig.height=7.5}
+return_resids = function(training_i, test_i, guide){
+  training = data.frame(all_fsc[,training_i],all_blu1[,training_i])
+  names(training)=c("FSC","BluFL1")
+  
+  #subtract missing values and small cell sizes
+  training = training[-which(is.na(training$BluFL1)),] #remove rows with values of NA
+  training = training[-which(training$FSC<40000),] #remove small cells where data is sparse
+  
+  #save model and use to predict fluorescence
+  mdl = gam(BluFL1~s(FSC,bs="cs"),data=training)
+  print(summary(mdl))
+  pBluFL1=predict(mdl, data.frame(FSC=training$FSC))
+  
+  #calculate residuals
+  residuals = training$BluFL1-pBluFL1
+  print(head(residuals))
+  
+  #get data for treated sample
+  temp = data.frame(all_fsc[,test_i],all_blu1[,test_i])
+  names(temp)=c("FSC","BluFL1")
+  
+  #remove na values or small cell sizes
+  if(length(which(is.na(temp$FSC)))!=0){temp = temp[-which(is.na(temp$FSC)),]}
+  if(length(which(temp$FSC<40000))){temp = temp[-which(temp$FSC<40000),]}
+  
+  #calculate residuals
+  pBluFL1_test = predict(mdl, data.frame(FSC=temp$FSC))
+  residuals_test = temp$BluFL1-pBluFL1_test
+  print(head(residuals_test))
+  
+  #return training and test residuals
+  resids = data.frame(matrix(ncol=2,nrow=11820))
+  names(resids) = c(paste(guide,"resid_minus",sep="_"),paste(guide,"resid_plus",sep="_"))
+  print
+  resids[1:length(residuals),1]=residuals
+  resids[1:length(residuals_test),2]=residuals_test
+  return(resids)
+  
+  }
+
+all_resids = cbind(return_resids(16,15,"COG8g2"),
+                   return_resids(5,2,"GET2g2"),
+                   return_resids(57,56,"PRE4g3"),
+                   return_resids(59,58,"PRE4g9"),
+                   return_resids(22,21,"RPN5g1"),
+                   return_resids(19,18,"SAP30g7"),
+                   return_resids(52,51,"YCR016Wg4"),
+                   return_resids(48,47,"YLR050Cg1"))
+
+med_resid = data.frame(apply(all_resids,2,function(x)median(x,na.rm=TRUE)))
+names(med_resid) = c("median")
+med_resid$sample = rownames(med_resid)
+med_resid$xval=NA
+temp = melt(all_resids)
+temp$xval=NA
+samples = unique(temp$variable)
+for(i in 1:length(samples)){
+  temp$xval[which(temp$variable==samples[i])]=i
+  med_resid$xval[which(med_resid$sample==samples[i])]=i
+  }
+ggplot(temp,aes(x=xval,y=value))+geom_hline()+ylim(-2000,1000)+
+  annotate("rect",xmin=0.5,xmax=2.5,ymin=-2000,ymax=1000,alpha=0.3)+
+  annotate("rect",xmin=4.5,xmax=6.5,ymin=-2000,ymax=1000,alpha=0.3)+
+  annotate("rect",xmin=8.5,xmax=10.5,ymin=-2000,ymax=1000,alpha=0.3)+
+  annotate("rect",xmin=12.5,xmax=14.5,ymin=-2000,ymax=1000,alpha=0.3)+
+  geom_violin(aes(fill=gsub(".+_","",variable),group=variable))+
+  scale_x_continuous(breaks=c(1.5,3.5,5.5,7.5,9.5,11.5,13.5,15.5),
+                     labels=c("COG8g2","GET2g2","PRE4g3","PRE4g9",
+                              "RPN5g1","SAP30g7","YCR016Wg4","YLR050Cg1"))+
+  theme(axis.text.x=element_text(angle=70,hjust=1))+ylab("")+xlab("")+
+  geom_point(data=med_resid,aes(x=xval,y=median),shape=95,size=20)+
+  scale_fill_manual(values=c("#00BFC4","#F8766D"))
+
+ 
+cont_resids = cbind(return_resids(1,8,"GET2nt"),
+                    return_resids(61,60,"PRE4nt"),
+                    return_resids(54,53,"YCR016Wnt"),
+                    return_resids(50,49,"YLR050Cnt"))
+```
+
+```{r fig.width=10,fig.height=7.5}
+med_resid = data.frame(apply(cont_resids,2,function(x)median(x,na.rm=TRUE)))
+names(med_resid) = c("median")
+med_resid$sample = rownames(med_resid)
+med_resid$xval=NA
+temp = melt(cont_resids)
+temp$xval=NA
+samples = unique(temp$variable)
+for(i in 1:length(samples)){
+  temp$xval[which(temp$variable==samples[i])]=i
+  med_resid$xval[which(med_resid$sample==samples[i])]=i
+  }
+
+
+ggplot(temp,aes(x=xval,y=value))+geom_hline()+ylim(-2000,1000)+
+  annotate("rect",xmin=0.5,xmax=2.5,ymin=-2000,ymax=1000,alpha=0.3)+
+  annotate("rect",xmin=4.5,xmax=6.5,ymin=-2000,ymax=1000,alpha=0.3)+
+  geom_violin(aes(fill=gsub(".+_","",variable),group=variable))+
+  scale_x_continuous(breaks=c(1.5,3.5,5.5,7.5),
+                     labels=c("GET2nt","PRE4nt","YCR016Wnt","YLR050Cnt"))+
+  theme(axis.text.x=element_text(angle=70,hjust=1))+ylab("")+xlab("")+
+  geom_point(data=med_resid,aes(x=xval,y=median),shape=95,size=20)+
+  scale_fill_manual(values=c("#00BFC4","#F8766D"))
+
+
+```
